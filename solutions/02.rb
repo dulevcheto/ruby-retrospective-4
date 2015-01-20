@@ -1,93 +1,67 @@
 class NumberSet
   include Enumerable
-  attr_accessor :numbers, :size
-
   def initialize
     @numbers = []
-    @size = 0
   end
 
-  def each
-    @numbers.each do |number|
-    yield number
-    end
+  def each(&block)
+    @numbers.each(&block)
   end
 
-def empty?
-  if @size == 0
-    return true
-  end
-  false
-end
-
-def <<(other)
-  other.to_r
-  numbers.each  do |n|
-    if (n.to_r == other)
-      return numbers
-    end
-  end
-  numbers.push(other)
-  @size += 1
-end
-
-def [](filter)
-  new_numbers = NumberSet.new
-  @numbers.select{|i| filter.valid_filter? i}.each do |number|
-    new_numbers << number
-  end
-  new_numbers
-end
-
-def &(filter, filter_one)
-  Filter.new do |number|
-  filter.valid_filter? number and filter_one.valid_filter? number
-  end
-end
-
-def |(filter, filter_one)
-  Filter.new do |number|
-  filter.valid_filter? number or filter_one.valid_filter? number
-end
-end
-end
-
-class SignFilter
-  def initialize(filter_sign)
-    @filter_sign = filter_sign
+  def size
+    @numbers.size
   end
 
-  def valid_filter?(number)
-    return true if(@filter_sign == :positive     and number > 0)
-    return true if(@filter_sign == :non_positive and number <= 0)
-    return true if(@filter_sign == :negative     and number < 0)
-    return true if(@filter_sign == :non_negative and number >= 0)
-    false
+  def empty?
+    @numbers.empty?
+  end
+
+  def <<(other)
+    @numbers<<other unless @numbers.include? other
+  end
+
+  def [](filter)
+    return false if @numbers == []
+    @numbers.each_with_object(NumberSet.new) do |number, new_numbers|
+    new_numbers << number if(filter.filter_pass? number)
   end
 end
-
+end
 class Filter
   def initialize(&block)
-    @block = block
+    @filter = block
   end
-  def valid_filter?(number)
-    return @block.call number
+
+  def filter_pass?(number)
+    @filter.call number
+  end
+
+  def &(filter)
+    Filter.new { |number| filter_pass? number and filter.filter_pass? number }
+  end
+
+  def |(filter)
+    Filter.new { |number| filter_pass? number or filter.filter_pass? number }
   end
 end
 
-class TypeFilter
-  def initialize(type)
-  @type = type
-  end
-
-  def valid_filter?(number)
-    return number.is_a? Integer if @type ==:integer
-    if @type == :real
-      if number.is_a? Rational  or number.is_a? Float
-        return true
-      end
+class TypeFilter < Filter
+  def initialize(filter_type)
+    case filter_type
+      when :integer then super() {|n| n.is_a? Integer}
+      when :real    then super() {|n| n.is_a? Rational or x.is_a? Float}
+      when :complex then super() {|n| n.is_a? Complex}
     end
-    return number.is_a? Complex if @type == :complex
-    false
+  end
+end
+
+class SignFilter < Filter
+  def initialize(filter_sign)
+    case filter_sign
+      when :positive     then super() { |x| x > 0 }
+      when :negative     then super() { |x| x < 0 }
+      when :non_positive then super() { |x| x <= 0 }
+      when :non_negative then super() { |x| x >= 0 }
+    end
   end
 end

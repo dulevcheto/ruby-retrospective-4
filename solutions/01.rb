@@ -11,8 +11,8 @@ end
 
 def series(kind_of_series, number)
   case kind_of_series
-    when "fibonacci" then fibonacci_series(number)
-    when "lucas"     then lucas_series(number)
-    when "summed"    then fibonacci_series(number) + lucas_series(number)
+    when 'fibonacci' then fibonacci_series(number)
+    when 'lucas'     then lucas_series(number)
+    when 'summed'   then fibonacci_series(number) + lucas_series(number)
   end
 end
